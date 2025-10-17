@@ -1,0 +1,248 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-2.0
+
+help_containers() {
+	[ "${HELP_SEEN}" ] && return
+	echo "${PNAME} - v${VERSION} - docker container management for developers"
+	echo
+	echo "The following commands are understood:"
+	echo "help          - Show this help message."
+	echo "create {name} - Create a new ${PNAME} source instance."
+	echo "build {name}  - Build a docker container from a ${PNAME} source instance."
+	echo "clean {name}  - Clean-up stale docker container builds."
+	echo
+	echo "{name} is always mandatory."
+	echo "{name} must be at least 4 characters long."
+	echo "{name} must not end in 'bg'."
+	echo "{name} is case-insensitive."
+	echo "{name} must be alphanumeric, underscore allowed only between first and last character (a-z_0-9)."
+	echo
+	echo "After creating and building, the container can be entered on the command line by its name alone."
+	echo "Giving its name and a command will run that command inside the container."
+	echo "To run a command inside the container in background append 'bg' to the container's name."
+	echo
+	echo "For each ${PNAME} source instance, a directory in ${HOME} will be created."
+	echo "Two symbolic links will also be created for each instance in ${HOME}/bin; one ending in bg."
+	echo "You may set the directory for ${PNAME} source instances in ${HOME}/.config/containers/conf.sh."
+	echo "CONTAINERS_PATH set to: ${CONTAINERS_PATH}"
+	HELP_SEEN=1
+}
+
+return_1() {
+	echo "${1}"
+}
+
+return_2() {
+	echo "${2}"
+}
+
+return_3() {
+	echo "${3}"
+}
+
+exists() {
+	if [ -f "${CONTAINERS_PATH}/${1,,}/Dockerfile" ]; then
+		[ "${2}" ] && error_out "${1} already exists!"
+		return 0
+	fi
+	return 1
+}
+
+get_latest() {
+	_latest="$(docker images | grep ${1,,} | grep " latest ")"
+	[ "${_latest}" ] && echo -n "$(return_3 ${_latest})"
+}
+
+test_bin() {
+	[ ! -d "${HOME}/bin" ] && error_out "${HOME}/bin does not exist! Please create!"
+	[ ! "$(echo ${PATH} | grep "${HOME}/bin")" ] && error_out "${HOME}/bin not in \$PATH! Please correct!"
+}
+
+test_name() {
+	[[ "${@}" != *[!A-Za-z_0-9]* ]] || error_out "{name} MUST only be letters (a-z)!"
+	F="${@}"
+	if [ "${F::1}" == "_" ] || [ "${F::-1}_" == "${F}" ]; then
+		error_out "{name} must not end or start with '_'!"
+	fi
+	[ "${#F}" -lt "4" ] && error_out "{name} MUST be at least 4 characters long!"
+}
+
+init_conf_sh() {
+	if [ ! -d "${HOME}/.config/containers" ]; then
+		mkdir -p "${HOME}/.config/containers"
+	fi
+	if [ ! -f "${HOME}/.config/containers/conf.sh" ]; then
+		echo 'CONTAINERS_PATH="${HOME}/containers"' > "${HOME}/.config/containers/conf.sh"
+	fi
+	. "${HOME}/.config/containers/conf.sh"
+	[ ! "${CONTAINERS_PATH}" ] && CONTAINERS_PATH="${HOME}/containers"
+}
+
+error_out() {
+	if [ "${1}" ]; then
+		help_containers
+		echo
+		echo "ERROR: ${1}"
+	fi
+	[ "${2}" ] && exit ${2}
+	exit 1
+}
+
+keep_alive() {
+	echo  -n '#!/bin/bash
+	while true; do
+		sleep 3s
+		COUNT="$(ps a | wc -l)"
+		[ "${COUNT}" -lt "6" ] && break
+	done'
+}
+
+dockerfile() {
+	DF="${CONTAINERS_PATH}/${1,,}/Dockerfile"
+	echo 'FROM debian:latest
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -q -y --no-install-recommends bash' > "${DF}"
+	echo "RUN addgroup --gid $(id -g) ${USER} &&\\
+ adduser --gecos \"${USER}\" --home /home/${USER} --uid $(id -u)\\
+ --gid $(id -g) --disabled-password --shell /bin/bash ${USER}" >> "${DF}"
+}
+
+invoke_rc() {
+	IV="${CONTAINERS_PATH}/${1,,}/invoke.rc.sh"
+	[ -f "${IV}" ] && return
+	echo "#Settings for docker
+#ENVS=(ENVAR=VALUE ...)
+#RUN=(--volume /home/user/db:/var/lib/db ...)
+#CONT_USER_ID=0
+#CONT_GROUP_ID=0
+#CONT_USER=nobody
+#CONT_HOME=/home/nobody" > "${IV}"
+}
+
+CREATE() {
+	test_name "${@}"
+	exists "${1}" 1
+	mkdir -p ${CONTAINERS_PATH}/${1,,}
+	mkdir -p ${HOME}/${1^^}
+	dockerfile ${1}
+	invoke_rc ${1}
+	ln -s ${0} "${HOME}/bin/${1,,}"
+	ln -s ${0} "${HOME}/bin/${1,,}bg"
+	echo "${1} created!"
+	exit 0
+}
+
+BUILD() {
+	test_bin
+	exists ${1} || error_out "${1,,} does not exist!"
+	latest_old="$(get_latest ${1,,})"
+	cd "${CONTAINERS_PATH}/${1,,}"
+	de="$(date +%y%m%d%H%M)-${RANDOM}"
+	docker build --force-rm -f Dockerfile -t "${1,,}:${de}" . || error_out "" ${?}
+	docker tag "${1,,}:${de}" "${1,,}:latest"
+	latest="$(get_latest ${1,,})"
+	if [ "${latest}" == "${latest_old}" ]; then
+		echo "INFO: No change to build! No container was build!"
+		docker rmi ${1,,}:${de}
+	fi
+	exit 0
+}
+
+CLEAN() {
+	exists ${1} || error_out "${1,,} does not exist!"
+	latest="$(get_latest "${1,,}")"
+	docker images | grep "${1,,}" | while read line; do
+		if [ ! "$(echo "${line}" | grep "${latest}")" ]; then
+			tag="$(return_2 ${line})"
+			docker rmi ${1,,}:${tag}
+		fi
+	done
+	exit 0
+}
+
+HELP() {
+	help_containers
+	exit 0
+}
+
+PNAME="containers"
+VERSION="0.1"
+init_conf_sh
+NAME="$(basename ${0})"
+
+if [ "${NAME}" == "${PNAME}" ] && [ ! "${1}" ] || [ "${1}" == "--help" ] || [ "${1}" == "-h" ]; then
+	help_containers
+	exit 0
+fi
+
+if [ "${NAME}" == "${PNAME}" ]; then
+	for CMD in create build clean help; do
+		[ "${CMD}" == "${1}" ] && break
+	done
+	${CMD^^} ${2}
+fi
+
+if [ "${NAME::-2}bg" == "${NAME}" ]; then
+	[ ! "${1}" ] && error_out "${NAME} requires a command as argument!"
+	NAME="${NAME::-2}"
+	EXEC=(-dt)
+else
+	EXEC=(-it)
+fi
+
+DIR="${NAME^^}"
+PWDLEN="${HOME}/${DIR}"
+PWDLEN=${#PWDLEN}
+
+[ ! -d "${HOME}/${DIR}" ] && echo "working directory '${HOME}/${DIR}' does not exist!" && exit 1
+[ ! -d "${CONTAINERS_PATH}/${NAME}" ] &&\
+	echo "container build directory '${CONTAINERS_PATH}/${NAME}' does not exist!" && exit 1
+
+keep_alive > "${HOME}/${DIR}/.keep_alive"
+chmod ugo+x "${HOME}/${DIR}/.keep_alive"
+
+CONT_USER_ID="$(id -u)"
+CONT_GROUP_ID="$(id -g)"
+CONT_USER="${USER}"
+CONT_HOME="${HOME}"
+[ -f "${CONTAINERS_PATH}/${NAME}/invoke.rc.sh" ] && . "${CONTAINERS_PATH}/${NAME}/invoke.rc.sh"
+ENVS+=(LANG=${LANG} TERM=${TERM} COLORTERM=${COLORTERM} PATH=${PATH} USER="${CONT_USER}" HOME="${CONT_HOME}")
+
+COUNT=1
+for ENV in "${@}"; do
+	if [ "${ENV/=}" != "${ENV}" ]; then
+		ENVS+=(${ENV})
+		(( COUNT++ ))
+	else
+		break
+	fi
+done
+
+
+for ENV in "${ENVS[@]}"; do
+	ENVIS+=(-e ${ENV})
+done
+
+USERSET="-u ${CONT_USER_ID}:${CONT_GROUP_ID}"
+RUN=(docker run "${RUN[@]}" "${EXEC[@]}" ${USERSET} \
+	-v ${HOME}/${DIR}:${HOME} -h ${NAME} --rm)
+EXEC=(docker exec "${EXEC[@]}" ${USERSET} "${ENVIS[@]}")
+
+if [ "${@:COUNT:1}" ] && [ "${PWD:0:${PWDLEN}}" != "${HOME}/${DIR}" ]; then
+		echo "you are not in ${HOME}/${DIR}"
+		exit 1
+fi
+
+IS_RUNNING="$(docker ps | grep " ${NAME}:latest ")"
+
+if [ ! "${IS_RUNNING}" ]; then
+	DOCKER_ID=$("${RUN[@]}" -dt -w ${CONT_HOME} ${NAME}:latest ${HOME}/.keep_alive)
+else
+	DOCKER_ID="$(return_1 ${IS_RUNNING})"
+fi
+
+if [ "${@:COUNT:1}" ]; then
+	"${EXEC[@]}" -w ${HOME}/${PWD:${PWDLEN}} "${DOCKER_ID}" "${@:COUNT}"
+else
+	"${EXEC[@]}" -w ${HOME} "${DOCKER_ID}" /bin/bash -l
+fi
