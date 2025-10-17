@@ -92,7 +92,7 @@ keep_alive() {
 	echo  -n '#!/bin/bash
 	while true; do
 		sleep 3s
-		COUNT="$(ps a | wc -l)"
+		COUNT="$(ps -e | wc -l)"
 		[ "${COUNT}" -lt "6" ] && break
 	done'
 }
