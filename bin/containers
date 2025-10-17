@@ -198,9 +198,6 @@ PWDLEN=${#PWDLEN}
 [ ! -d "${CONTAINERS_PATH}/${NAME}" ] &&\
 	echo "container build directory '${CONTAINERS_PATH}/${NAME}' does not exist!" && exit 1
 
-keep_alive > "${HOME}/${DIR}/.keep_alive"
-chmod ugo+x "${HOME}/${DIR}/.keep_alive"
-
 CONT_USER_ID="$(id -u)"
 CONT_GROUP_ID="$(id -g)"
 CONT_USER="${USER}"
@@ -236,6 +233,8 @@ fi
 IS_RUNNING="$(docker ps | grep " ${NAME}:latest ")"
 
 if [ ! "${IS_RUNNING}" ]; then
+	keep_alive > "${HOME}/${DIR}/.keep_alive"
+	chmod ugo+x "${HOME}/${DIR}/.keep_alive"
 	DOCKER_ID=$("${RUN[@]}" -dt -w ${CONT_HOME} ${NAME}:latest ${HOME}/.keep_alive)
 else
 	DOCKER_ID="$(return_1 ${IS_RUNNING})"
