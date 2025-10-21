@@ -135,7 +135,8 @@ BUILD() {
 	exists ${1} || error_out "${1,,} does not exist!"
 	latest_old="$(get_latest ${1,,})"
 	cd "${CONTAINERS_PATH}/${1,,}"
-	de="$(date +%y%m%d%H%M)-${RANDOM}"
+	count="$(docker images | grep ${1,,} | grep -v latest | wc -l)"
+	de="$(date +%y%m%d%H%M)-${count}"
 	docker build --force-rm -f Dockerfile -t "${1,,}:${de}" . || error_out "" ${?}
 	docker tag "${1,,}:${de}" "${1,,}:latest"
 	latest="$(get_latest ${1,,})"
