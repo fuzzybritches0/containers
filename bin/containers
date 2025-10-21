@@ -121,14 +121,12 @@ invoke_rc() {
 
 CREATE() {
 	test_name "${@}"
-	exists "${1}" 1
 	mkdir -p ${CONTAINERS_PATH}/${1,,}
 	mkdir -p ${HOME}/${1^^}
-	dockerfile ${1}
-	invoke_rc ${1}
-	ln -s ${0} "${HOME}/bin/${1,,}"
-	ln -s ${0} "${HOME}/bin/${1,,}bg"
-	echo "${1} created!"
+	[ ! -f "${CONTAINERS_PATH}/${1,,}/Dockerfile" ] && dockerfile ${1}
+	[ ! -f "${CONTAINERS_PATH}/${1,,}/invoke.rc.sh" ] && invoke_rc ${1}
+	[ ! -f "${HOME}/bin/${1,,}" ] && ln -s ${0} "${HOME}/bin/${1,,}"
+	[ ! -f "${HOME}/bin/${1,,}bg" ] && ln -s ${0} "${HOME}/bin/${1,,}bg"
 	exit 0
 }
 
