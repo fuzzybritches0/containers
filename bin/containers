@@ -91,7 +91,7 @@ error_out() {
 keep_alive() {
 	echo  -n '#!/bin/bash
 	while true; do
-		sleep 3s
+		sleep 1s
 		COUNT="$(ps -e | wc -l)"
 		[ "${COUNT}" -lt "6" ] && break
 	done'
