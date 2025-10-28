@@ -10,7 +10,7 @@ The following commands are understood:
 {name} must be at least 4 characters long.
 {name} must not end in 'bg'.
 {name} is case-insensitive.
-{name} must be alphanumeric, underscore allowed only between first and last character (a-z_0-9).
+{name} must be alphanumeric, underscores allowed only between first and last characters (a-z_0-9).
 
 After creating and building, the container can be entered on the command line by its name alone.
 

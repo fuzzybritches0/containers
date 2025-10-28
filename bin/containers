@@ -15,7 +15,7 @@ help_containers() {
 	echo "{name} must be at least 4 characters long."
 	echo "{name} must not end in 'bg'."
 	echo "{name} is case-insensitive."
-	echo "{name} must be alphanumeric, underscore allowed only between first and last character (a-z_0-9)."
+	echo "{name} must be alphanumeric, underscores allowed only between first and last characters (a-z_0-9)."
 	echo
 	echo "After creating and building, the container can be entered on the command line by its name alone."
 	echo "Giving its name and a command will run that command inside the container."
