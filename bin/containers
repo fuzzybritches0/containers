@@ -97,6 +97,11 @@ keep_alive() {
 	done'
 }
 
+container_exec() {
+	echo -n '#!/bin/bash -l
+	"${@}"'
+}
+
 dockerfile() {
 	DF="${CONTAINERS_PATH}/${1,,}/Dockerfile"
 	echo 'FROM debian:latest
@@ -202,7 +207,7 @@ CONT_GROUP_ID="$(id -g)"
 CONT_USER="${USER}"
 CONT_HOME="${HOME}"
 [ -f "${CONTAINERS_PATH}/${NAME}/invoke.rc.sh" ] && . "${CONTAINERS_PATH}/${NAME}/invoke.rc.sh"
-ENVS+=(LANG=${LANG} TERM=${TERM} COLORTERM=${COLORTERM} PATH=${PATH} USER="${CONT_USER}" HOME="${CONT_HOME}")
+ENVS+=(LANG=${LANG} TERM=${TERM} COLORTERM=${COLORTERM} USER="${CONT_USER}" HOME="${CONT_HOME}")
 
 COUNT=1
 for ENV in "${@}"; do
@@ -213,7 +218,6 @@ for ENV in "${@}"; do
 		break
 	fi
 done
-
 
 for ENV in "${ENVS[@]}"; do
 	ENVIS+=(-e ${ENV})
@@ -240,7 +244,9 @@ else
 fi
 
 if [ "${@:COUNT:1}" ]; then
-	"${EXEC[@]}" -w ${HOME}/${PWD:${PWDLEN}} "${DOCKER_ID}" "${@:COUNT}"
+	container_exec > "${HOME}/${DIR}/.exec"
+	chmod ugo+x "${HOME}/${DIR}/.exec"
+	"${EXEC[@]}" -w ${HOME}/${PWD:${PWDLEN}} "${DOCKER_ID}" ~/.exec "${@:COUNT}"
 else
 	"${EXEC[@]}" -w ${HOME} "${DOCKER_ID}" /bin/bash -l
 fi
