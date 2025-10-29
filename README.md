@@ -1,5 +1,7 @@
 # containers - v0.1 - docker container management for developers
 
+Containerise all your different development environments.
+
 The following commands are understood:
 - help          - Show this help message.
 - create {name} - Create a new containers source instance.
