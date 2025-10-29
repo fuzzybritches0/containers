@@ -106,7 +106,7 @@ dockerfile() {
 	DF="${CONTAINERS_PATH}/${1,,}/Dockerfile"
 	echo 'FROM debian:latest
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -q -y --no-install-recommends bash' > "${DF}"
+RUN apt-get update && apt-get install -q -y --no-install-recommends procps' > "${DF}"
 	echo "RUN addgroup --gid $(id -g) ${USER} &&\\
  adduser --gecos \"${USER}\" --home /home/${USER} --uid $(id -u)\\
  --gid $(id -g) --disabled-password --shell /bin/bash ${USER}" >> "${DF}"
