@@ -1,1 +1,88 @@
-/home/kurt/DEVEL/containers/bootstrap_on/overlay/usr/bin/bootstrap-on
+#!/bin/bash
+
+helpscreen() {
+
+	echo "${1}"
+	echo
+	[ "${2}" ] && exit ${2}
+	exit 0
+}
+
+mount_chroot() {
+
+	mount -o bind /sys ./sys
+	mount -o bind /proc ./proc
+	mount -o bind /dev ./dev
+}
+
+umount_chroot() {
+
+	umount ./sys
+	umount ./proc
+	umount ./dev
+}
+
+inchroot() {
+
+	if [ "$(echo /scripts/*)" != "/scripts/*" ]; then
+		for script in /scripts/*; do
+			echo "---------------------"
+			echo "CHROOT: ${script}..."
+			if [ -x "${script}" ]; then
+				"${script}" || exit ${?}
+			fi
+			echo "OK"
+			echo "---------------------"
+		done
+		rm -rf /scripts
+	fi
+	exit 0
+}
+
+scripts() {
+
+	for script in ../scripts/${1}/*.sh; do
+		echo "---------------------"
+		echo "HOST: ${script}..."
+		"${script}" || exit ${?}
+		echo "OK"
+		echo "---------------------"
+	done
+}
+
+[ "${1}" == "inchroot" ] && inchroot
+
+exp="${RANDOM}"
+
+mkdir "${exp}" || exit ${?}
+cd ${exp}
+
+[ "$(echo ../overlays/pre-scripts/*)" != "../overlays/pre-scripts/*" ] && \
+	cp -vr ../overlays/pre-scripts/*/* .
+
+[ "$(echo ../scripts/pre-chroot/*)" != "../scripts/pre-chroot/*" ] && scripts pre-chroot
+
+[ "$(echo ../overlays/pre-chroot/*)" != "../overlays/pre-chroot/*" ] && \
+	cp -vr ../overlays/pre-chroot/*/* .
+
+[ "$(echo ../scripts/chroot/*)" != "../scripts/chroot/*" ] && cp -r ../scripts/chroot ./scripts
+
+cp -L "${0}" ./bin
+
+mount_chroot
+
+chroot . /bin/$(basename ${0}) inchroot
+
+umount_chroot
+
+[ "$(echo ../overlays/post-chroot/*)" != "../overlays/post-chroot/*" ] && \
+	cp -vr ../overlays/post-chroot/*/* .
+
+[ "$(echo ../scripts/post-chroot/*.sh)" != "../scripts/post-chroot/*.sh" ] && scripts post-chroot
+
+cd ..
+
+rm -rf ${exp} || exit ${?}
+
+exit 0
+
