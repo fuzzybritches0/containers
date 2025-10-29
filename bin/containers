@@ -189,9 +189,13 @@ fi
 if [ "${NAME::-2}bg" == "${NAME}" ]; then
 	[ ! "${1}" ] && error_out "${NAME} requires a command as argument!"
 	NAME="${NAME::-2}"
-	EXEC=(-dt)
+	if tty -s; then
+		EXEC=(-dt)
+	else
+		EXEC=(-d)
+	fi
 else
-	EXEC=(-it)
+	tty -s && EXEC=(-it)
 fi
 
 DIR="${NAME^^}"
