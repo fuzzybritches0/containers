@@ -1,0 +1,7 @@
+ADDRESS="http://deb.debian.org/debian"
+SECADDRESS="http://security.debian.org/debian-security/"
+SUITE="trixie"
+COMPONENTS="main contrib non-free non-free-firmware"
+#Tested with apt-cacher-ng
+#PROXY="http://127.0.0.1"
+#PPORT="3142"
