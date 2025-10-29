@@ -2,7 +2,7 @@
 
 Containerise all your different development environments.
 
-The following commands are understood:
+### The following commands are understood:
 - help          - Show this help message.
 - create {name} - Create a new containers source instance.
 - build {name}  - Build a docker container from a containers source instance.
@@ -44,5 +44,33 @@ For each containers source instance, a directory in $HOME will be created.
 Two symbolic links will also be created for each instance in $HOME/bin; one ending in bg.
 You may set the directory for containers source instances in $HOME/.config/containers/conf.sh.
 The default is: $HOME/containers
+
+### bootstrap_on example
+
+Copy BOOTSTRAP_ON into $HOME and containers/bootstrap_on into your containers instances directory.
+
+Then call,
+
+```
+user@host:~$ containers create bootstrap_on
+```
+
+to have the symbolic links created. After that call,
+
+```
+user@host:~$ containers build bootstrap_on
+```
+
+to build the container.
+
+Then do:
+
+```
+user@host:~$ cd ~/BOOTSTRAP_ON/debminbase
+user@host:~$ bootstrap_on bootstrap-on
+user@host:~$ ./docker.sh
+```
+
+Now you have a Debian 13 (trixie) base container, build from scratch, ready in Docker to use as a base to build upon.
 
 Happy coding!
