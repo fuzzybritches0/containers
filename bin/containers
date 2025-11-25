@@ -91,7 +91,7 @@ error_out() {
 keep_alive() {
 	echo  -n '#!/bin/bash
 	while true; do
-		sleep 1s
+		cat ~/.cont_fifo
 		COUNT="$(ps -e | wc -l)"
 		[ "${COUNT}" -lt "6" ] && break
 	done'
@@ -241,6 +241,10 @@ IS_RUNNING="$(docker ps | grep " ${NAME}:latest ")"
 
 if [ ! "${IS_RUNNING}" ]; then
 	keep_alive > "${HOME}/${DIR}/.keep_alive"
+	if [ ! -p "${HOME}/${DIR}/.cont_fifo" ]; then
+		rm -f "${HOME}/${DIR}/.cont_fifo"
+		mkfifo "${HOME}/${DIR}/.cont_fifo"
+	fi
 	chmod ugo+x "${HOME}/${DIR}/.keep_alive"
 	DOCKER_ID=$("${RUN[@]}" -dt -w ${CONT_HOME} ${NAME}:latest ${HOME}/.keep_alive)
 else
@@ -251,6 +255,8 @@ if [ "${@:COUNT:1}" ]; then
 	container_exec > "${HOME}/${DIR}/.exec"
 	chmod ugo+x "${HOME}/${DIR}/.exec"
 	"${EXEC[@]}" -w ${HOME}/${PWD:${PWDLEN}} "${DOCKER_ID}" ~/.exec "${@:COUNT}"
+	echo > "${HOME}/${DIR}/.cont_fifo"
 else
 	"${EXEC[@]}" -w ${HOME} "${DOCKER_ID}" /bin/bash -l
+	echo > "${HOME}/${DIR}/.cont_fifo"
 fi
