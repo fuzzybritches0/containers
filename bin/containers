@@ -99,7 +99,8 @@ keep_alive() {
 
 container_exec() {
 	echo -n '#!/bin/bash -l
-	"${@}"'
+	"${@}"
+	echo > ~/.cont_fifo'
 }
 
 dockerfile() {
@@ -255,7 +256,6 @@ if [ "${@:COUNT:1}" ]; then
 	container_exec > "${HOME}/${DIR}/.exec"
 	chmod ugo+x "${HOME}/${DIR}/.exec"
 	"${EXEC[@]}" -w ${HOME}/${PWD:${PWDLEN}} "${DOCKER_ID}" ~/.exec "${@:COUNT}"
-	echo > "${HOME}/${DIR}/.cont_fifo"
 else
 	"${EXEC[@]}" -w ${HOME} "${DOCKER_ID}" /bin/bash -l
 	echo > "${HOME}/${DIR}/.cont_fifo"
