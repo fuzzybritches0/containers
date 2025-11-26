@@ -1,6 +1,21 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-2.0
 
+if [ "${1}" == "keep_alive" ]; then
+	echo '#!/bin/bash -l
+	"${@}"
+	echo > /tmp/cont_fifo' > /tmp/containers_exec
+	chmod ugo+x /tmp/containers_exec
+	mkfifo /tmp/cont_fifo
+	chmod ugo+w /tmp/cont_fifo
+	while true; do
+		cat /tmp/cont_fifo
+		COUNT="$(ps -e | wc -l)"
+		[ "${COUNT}" -lt "6" ] && break
+	done
+	exit 0
+fi
+
 help_containers() {
 	[ "${HELP_SEEN}" ] && return
 	echo "${PNAME} - v${VERSION} - docker container management for developers"
@@ -86,21 +101,6 @@ error_out() {
 	fi
 	[ "${2}" ] && exit ${2}
 	exit 1
-}
-
-keep_alive() {
-	echo  -n '#!/bin/bash
-	while true; do
-		cat ~/.cont_fifo
-		COUNT="$(ps -e | wc -l)"
-		[ "${COUNT}" -lt "6" ] && break
-	done'
-}
-
-container_exec() {
-	echo -n '#!/bin/bash -l
-	"${@}"
-	echo > ~/.cont_fifo'
 }
 
 dockerfile() {
@@ -230,6 +230,7 @@ done
 
 USERSET="-u ${CONT_USER_ID}:${CONT_GROUP_ID}"
 RUN=(docker run "${RUN[@]}" "${EXEC[@]}" ${USERSET} \
+	-v $(realpath ${0}):/tmp/containers \
 	-v ${HOME}/${DIR}:${HOME} -h ${NAME} --rm)
 EXEC=(docker exec "${EXEC[@]}" ${USERSET} "${ENVIS[@]}")
 
@@ -241,22 +242,13 @@ fi
 IS_RUNNING="$(docker ps | grep " ${NAME}:latest ")"
 
 if [ ! "${IS_RUNNING}" ]; then
-	keep_alive > "${HOME}/${DIR}/.keep_alive"
-	if [ ! -p "${HOME}/${DIR}/.cont_fifo" ]; then
-		rm -f "${HOME}/${DIR}/.cont_fifo"
-		mkfifo "${HOME}/${DIR}/.cont_fifo"
-	fi
-	chmod ugo+x "${HOME}/${DIR}/.keep_alive"
-	DOCKER_ID=$("${RUN[@]}" -dt -w ${CONT_HOME} ${NAME}:latest ${HOME}/.keep_alive)
+	DOCKER_ID=$("${RUN[@]}" -dt -w ${CONT_HOME} ${NAME}:latest /tmp/containers keep_alive)
 else
 	DOCKER_ID="$(return_1 ${IS_RUNNING})"
 fi
 
 if [ "${@:COUNT:1}" ]; then
-	container_exec > "${HOME}/${DIR}/.exec"
-	chmod ugo+x "${HOME}/${DIR}/.exec"
-	"${EXEC[@]}" -w ${HOME}/${PWD:${PWDLEN}} "${DOCKER_ID}" ~/.exec "${@:COUNT}"
+	"${EXEC[@]}" -w ${HOME}/${PWD:${PWDLEN}} "${DOCKER_ID}" /tmp/containers_exec "${@:COUNT}"
 else
-	"${EXEC[@]}" -w ${HOME} "${DOCKER_ID}" /bin/bash -l
-	echo > "${HOME}/${DIR}/.cont_fifo"
+	"${EXEC[@]}" -w ${HOME} "${DOCKER_ID}" /tmp/containers_exec /bin/bash
 fi
