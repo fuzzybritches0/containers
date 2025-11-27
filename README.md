@@ -22,7 +22,7 @@ user@container_name:~$ exit
 user@host:~$
 ```
 
-Giving its name and a command will run that command inside the container when inside the container directory.
+Giving its name and a command, it will run that command inside the container when inside the container interface directory.
 
 ```
 user@host:~$ cd CONTAINER_NAME
@@ -40,14 +40,21 @@ user@host:~/CONTAINER_NAME$ container_namebg bin/sshd
 user@host:~/CONTAINER_NAME$
 ```
 
-For each containers source instance, a directory in $HOME will be created.
-Two symbolic links will also be created for each instance in $HOME/bin; one ending in bg.
-You may set the directory for containers source instances in $HOME/.config/containers/conf.sh.
-The default is: $HOME/containers
+For each containers source instance, a directory in $CONTAINERS_ROOT will be created.
+Two symbolic links will also be created for each instance in $CONTAINERS_BIN; one ending in bg.
+You may set the directories for containers source instances, containers interfacing directories and BIN symlinks in $HOME/.config/containers/conf.sh.
+
+The defaults are:
+
+```
+CONTAINERS_SOURCE=$HOME/containers
+CONTAINERS_ROOT=$HOME
+CONTAINERS_BIN=$HOME/bin
+```
 
 ### bootstrap_on example
 
-Copy BOOTSTRAP_ON into $HOME and containers/bootstrap_on into your containers instances directory.
+Copy BOOTSTRAP_ON into $CONTAINERS_ROOT and containers/bootstrap_on into $CONTAINERS_SOURCE.
 
 Then call,
 
