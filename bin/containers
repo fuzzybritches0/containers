@@ -39,7 +39,7 @@ help_containers() {
 	echo "For each ${PNAME} source instance, a directory in ${HOME} will be created."
 	echo "Two symbolic links will also be created for each instance in ${CONTAINERS_BIN}; one ending in bg."
 	echo "You may set the directory for ${PNAME} source instances in ${HOME}/.config/containers/conf.sh."
-	echo "CONTAINERS_PATH set to: ${CONTAINERS_PATH}"
+	echo "CONTAINERS_SOURCE set to: ${CONTAINERS_SOURCE}"
 	echo "CONTAINERS_BIN set to: ${CONTAINERS_BIN}"
 	HELP_SEEN=1
 }
@@ -57,7 +57,7 @@ return_3() {
 }
 
 exists() {
-	if [ -f "${CONTAINERS_PATH}/${1,,}/Dockerfile" ]; then
+	if [ -f "${CONTAINERS_SOURCE}/${1,,}/Dockerfile" ]; then
 		[ "${2}" ] && error_out "${1} already exists!"
 		return 0
 	fi
@@ -90,11 +90,11 @@ init_conf_sh() {
 		mkdir -p "${HOME}/.config/containers"
 	fi
 	if [ ! -f "${HOME}/.config/containers/conf.sh" ]; then
-		echo 'CONTAINERS_PATH="${HOME}/containers"' > "${HOME}/.config/containers/conf.sh"
+		echo 'CONTAINERS_SOURCE="${HOME}/containers"' > "${HOME}/.config/containers/conf.sh"
 		echo 'CONTAINERS_BIN="${HOME}/bin"' >> "${HOME}/.config/containers/conf.sh"
 	fi
 	. "${HOME}/.config/containers/conf.sh"
-	[ ! "${CONTAINERS_PATH}" ] && error_out "CONTAINERS_PATH not set in conf.sh!"
+	[ ! "${CONTAINERS_SOURCE}" ] && error_out "CONTAINERS_SOURCE not set in conf.sh!"
 	[ ! "${CONTAINERS_BIN}" ] && error_out "CONTAINERS_BIN not set in conf.sh!"
 }
 
@@ -109,7 +109,7 @@ error_out() {
 }
 
 dockerfile() {
-	DF="${CONTAINERS_PATH}/${1,,}/Dockerfile"
+	DF="${CONTAINERS_SOURCE}/${1,,}/Dockerfile"
 	echo 'FROM debian:latest
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -q -y --no-install-recommends procps' > "${DF}"
@@ -119,7 +119,7 @@ RUN apt-get update && apt-get install -q -y --no-install-recommends procps' > "$
 }
 
 invoke_rc() {
-	IV="${CONTAINERS_PATH}/${1,,}/invoke.rc.sh"
+	IV="${CONTAINERS_SOURCE}/${1,,}/invoke.rc.sh"
 	[ -f "${IV}" ] && return
 	echo "#Settings for docker
 #ENVS=(ENVAR=VALUE ...)
@@ -132,10 +132,10 @@ invoke_rc() {
 
 CREATE() {
 	test_name "${@}"
-	mkdir -p ${CONTAINERS_PATH}/${1,,}
+	mkdir -p ${CONTAINERS_SOURCE}/${1,,}
 	mkdir -p ${HOME}/${1^^}
-	[ ! -f "${CONTAINERS_PATH}/${1,,}/Dockerfile" ] && dockerfile ${1}
-	[ ! -f "${CONTAINERS_PATH}/${1,,}/invoke.rc.sh" ] && invoke_rc ${1}
+	[ ! -f "${CONTAINERS_SOURCE}/${1,,}/Dockerfile" ] && dockerfile ${1}
+	[ ! -f "${CONTAINERS_SOURCE}/${1,,}/invoke.rc.sh" ] && invoke_rc ${1}
 	[ ! -f "${CONTAINERS_BIN}/${1,,}" ] && ln -s ${0} "${CONTAINERS_BIN}/${1,,}"
 	[ ! -f "${CONTAINERS_BIN}/${1,,}bg" ] && ln -s ${0} "${CONTAINERS_BIN}/${1,,}bg"
 	exit 0
@@ -145,7 +145,7 @@ BUILD() {
 	test_bin
 	exists ${1} || error_out "${1,,} does not exist!"
 	latest_old="$(get_latest ${1,,})"
-	cd "${CONTAINERS_PATH}/${1,,}"
+	cd "${CONTAINERS_SOURCE}/${1,,}"
 	count="$(docker images | grep ${1,,} | grep -v latest | wc -l)"
 	de="$(date +%y%m%d%H%M)-${count}"
 	docker build --force-rm -f Dockerfile -t "${1,,}:${de}" . || error_out "" ${?}
@@ -209,14 +209,14 @@ PWDLEN="${HOME}/${DIR}"
 PWDLEN=${#PWDLEN}
 
 [ ! -d "${HOME}/${DIR}" ] && echo "working directory '${HOME}/${DIR}' does not exist!" && exit 1
-[ ! -d "${CONTAINERS_PATH}/${NAME}" ] &&\
-	echo "container build directory '${CONTAINERS_PATH}/${NAME}' does not exist!" && exit 1
+[ ! -d "${CONTAINERS_SOURCE}/${NAME}" ] &&\
+	echo "container build directory '${CONTAINERS_SOURCE}/${NAME}' does not exist!" && exit 1
 
 CONT_USER_ID="$(id -u)"
 CONT_GROUP_ID="$(id -g)"
 CONT_USER="${USER}"
 CONT_HOME="${HOME}"
-[ -f "${CONTAINERS_PATH}/${NAME}/invoke.rc.sh" ] && . "${CONTAINERS_PATH}/${NAME}/invoke.rc.sh"
+[ -f "${CONTAINERS_SOURCE}/${NAME}/invoke.rc.sh" ] && . "${CONTAINERS_SOURCE}/${NAME}/invoke.rc.sh"
 ENVS+=(LANG=${LANG} TERM=${TERM} COLORTERM=${COLORTERM} USER="${CONT_USER}" HOME="${CONT_HOME}")
 
 COUNT=1
