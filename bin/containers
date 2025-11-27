@@ -39,6 +39,7 @@ help_containers() {
 	echo "For each ${PNAME} source instance, a directory in ${CONTAINERS_SOURCE} will be created."
 	echo "Two symbolic links will also be created for each instance in ${CONTAINERS_BIN}; one ending in bg."
 	echo "You may set the directory for ${PNAME} source instances in ${HOME}/.config/containers/conf.sh."
+	echo "You can also set the interfacing directories location and symlink location there:"
 	echo "CONTAINERS_SOURCE set to: ${CONTAINERS_SOURCE}"
 	echo "CONTAINERS_ROOT set to: ${CONTAINERS_ROOT}"
 	echo "CONTAINERS_BIN set to: ${CONTAINERS_BIN}"
