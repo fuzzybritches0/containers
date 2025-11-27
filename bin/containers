@@ -36,10 +36,11 @@ help_containers() {
 	echo "Giving its name and a command will run that command inside the container."
 	echo "To run a command inside the container in background append 'bg' to the container's name."
 	echo
-	echo "For each ${PNAME} source instance, a directory in ${HOME} will be created."
+	echo "For each ${PNAME} source instance, a directory in ${CONTAINERS_SOURCE} will be created."
 	echo "Two symbolic links will also be created for each instance in ${CONTAINERS_BIN}; one ending in bg."
 	echo "You may set the directory for ${PNAME} source instances in ${HOME}/.config/containers/conf.sh."
 	echo "CONTAINERS_SOURCE set to: ${CONTAINERS_SOURCE}"
+	echo "CONTAINERS_ROOT set to: ${CONTAINERS_ROOT}"
 	echo "CONTAINERS_BIN set to: ${CONTAINERS_BIN}"
 	HELP_SEEN=1
 }
@@ -91,10 +92,12 @@ init_conf_sh() {
 	fi
 	if [ ! -f "${HOME}/.config/containers/conf.sh" ]; then
 		echo 'CONTAINERS_SOURCE="${HOME}/containers"' > "${HOME}/.config/containers/conf.sh"
+		echo 'CONTAINERS_ROOT="${HOME}"' >> "${HOME}/.config/containers/conf.sh"
 		echo 'CONTAINERS_BIN="${HOME}/bin"' >> "${HOME}/.config/containers/conf.sh"
 	fi
 	. "${HOME}/.config/containers/conf.sh"
 	[ ! "${CONTAINERS_SOURCE}" ] && error_out "CONTAINERS_SOURCE not set in conf.sh!"
+	[ ! "${CONTAINERS_ROOT}" ] && error_out "CONTAINERS_ROOT not set in conf.sh!"
 	[ ! "${CONTAINERS_BIN}" ] && error_out "CONTAINERS_BIN not set in conf.sh!"
 }
 
@@ -133,7 +136,7 @@ invoke_rc() {
 CREATE() {
 	test_name "${@}"
 	mkdir -p ${CONTAINERS_SOURCE}/${1,,}
-	mkdir -p ${HOME}/${1^^}
+	mkdir -p ${CONTAINERS_ROOT}/${1^^}
 	[ ! -f "${CONTAINERS_SOURCE}/${1,,}/Dockerfile" ] && dockerfile ${1}
 	[ ! -f "${CONTAINERS_SOURCE}/${1,,}/invoke.rc.sh" ] && invoke_rc ${1}
 	[ ! -f "${CONTAINERS_BIN}/${1,,}" ] && ln -s ${0} "${CONTAINERS_BIN}/${1,,}"
@@ -205,11 +208,12 @@ else
 fi
 
 DIR="${NAME^^}"
-PWDLEN="${HOME}/${DIR}"
+PWDLEN="${CONTAINERS_ROOT}/${DIR}"
 PWDLEN=${#PWDLEN}
 
-[ ! -d "${HOME}/${DIR}" ] && echo "working directory '${HOME}/${DIR}' does not exist!" && exit 1
-[ ! -d "${CONTAINERS_SOURCE}/${NAME}" ] &&\
+[ ! -d "${CONTAINERS_ROOT}/${DIR}" ] && \
+	echo "working directory '${CONTAINERS_ROOT}/${DIR}' does not exist!" && exit 1
+[ ! -d "${CONTAINERS_SOURCE}/${NAME}" ] && \
 	echo "container build directory '${CONTAINERS_SOURCE}/${NAME}' does not exist!" && exit 1
 
 CONT_USER_ID="$(id -u)"
@@ -236,11 +240,11 @@ done
 USERSET="-u ${CONT_USER_ID}:${CONT_GROUP_ID}"
 RUN=(docker run "${RUN[@]}" "${EXEC[@]}" ${USERSET} \
 	-v $(realpath ${0}):/tmp/KEEP_ALIVE \
-	-v ${HOME}/${DIR}:${HOME} -h ${NAME} --rm)
+	-v ${CONTAINERS_ROOT}/${DIR}:${HOME} -h ${NAME} --rm)
 EXEC=(docker exec "${EXEC[@]}" ${USERSET} "${ENVIS[@]}")
 
-if [ "${@:COUNT:1}" ] && [ "${PWD:0:${PWDLEN}}" != "${HOME}/${DIR}" ]; then
-		echo "you are not in ${HOME}/${DIR}"
+if [ "${@:COUNT:1}" ] && [ "${PWD:0:${PWDLEN}}" != "${CONTAINERS_ROOT}/${DIR}" ]; then
+		echo "you are not in ${CONTAINERS_ROOT}/${DIR}"
 		exit 1
 fi
 
