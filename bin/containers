@@ -37,9 +37,10 @@ help_containers() {
 	echo "To run a command inside the container in background append 'bg' to the container's name."
 	echo
 	echo "For each ${PNAME} source instance, a directory in ${HOME} will be created."
-	echo "Two symbolic links will also be created for each instance in ${HOME}/bin; one ending in bg."
+	echo "Two symbolic links will also be created for each instance in ${CONTAINERS_BIN}; one ending in bg."
 	echo "You may set the directory for ${PNAME} source instances in ${HOME}/.config/containers/conf.sh."
 	echo "CONTAINERS_PATH set to: ${CONTAINERS_PATH}"
+	echo "CONTAINERS_BIN set to: ${CONTAINERS_BIN}"
 	HELP_SEEN=1
 }
 
@@ -69,8 +70,9 @@ get_latest() {
 }
 
 test_bin() {
-	[ ! -d "${HOME}/bin" ] && error_out "${HOME}/bin does not exist! Please create!"
-	[ ! "$(echo ${PATH} | grep "${HOME}/bin")" ] && error_out "${HOME}/bin not in \$PATH! Please correct!"
+	[ ! -d "${CONTAINERS_BIN}" ] && error_out "${CONTAINERS_BIN} does not exist! Please create!"
+	[ ! "$(echo ${PATH} | grep "${CONTAINERS_BIN}")" ] && \
+		error_out "${CONTAINERS_BIN} not in \$PATH! Please correct!"
 }
 
 test_name() {
@@ -89,9 +91,11 @@ init_conf_sh() {
 	fi
 	if [ ! -f "${HOME}/.config/containers/conf.sh" ]; then
 		echo 'CONTAINERS_PATH="${HOME}/containers"' > "${HOME}/.config/containers/conf.sh"
+		echo 'CONTAINERS_BIN="${HOME}/bin"' >> "${HOME}/.config/containers/conf.sh"
 	fi
 	. "${HOME}/.config/containers/conf.sh"
-	[ ! "${CONTAINERS_PATH}" ] && CONTAINERS_PATH="${HOME}/containers"
+	[ ! "${CONTAINERS_PATH}" ] && error_out "CONTAINERS_PATH not set in conf.sh!"
+	[ ! "${CONTAINERS_BIN}" ] && error_out "CONTAINERS_BIN not set in conf.sh!"
 }
 
 error_out() {
@@ -132,8 +136,8 @@ CREATE() {
 	mkdir -p ${HOME}/${1^^}
 	[ ! -f "${CONTAINERS_PATH}/${1,,}/Dockerfile" ] && dockerfile ${1}
 	[ ! -f "${CONTAINERS_PATH}/${1,,}/invoke.rc.sh" ] && invoke_rc ${1}
-	[ ! -f "${HOME}/bin/${1,,}" ] && ln -s ${0} "${HOME}/bin/${1,,}"
-	[ ! -f "${HOME}/bin/${1,,}bg" ] && ln -s ${0} "${HOME}/bin/${1,,}bg"
+	[ ! -f "${CONTAINERS_BIN}/${1,,}" ] && ln -s ${0} "${CONTAINERS_BIN}/${1,,}"
+	[ ! -f "${CONTAINERS_BIN}/${1,,}bg" ] && ln -s ${0} "${CONTAINERS_BIN}/${1,,}bg"
 	exit 0
 }
 
