@@ -74,7 +74,8 @@ test_bin() {
 }
 
 test_name() {
-	[[ "${@}" != *[!A-Za-z_0-9]* ]] || error_out "{name} MUST only be letters (a-z)!"
+	[ "${@}" == "$(basename ${0})" ] && error_out "{name} MUST not be '${@}'!"
+	[[ "${@}" != *[!A-Za-z_0-9]* ]] || error_out "{name} is invalid! See --help!"
 	F="${@}"
 	if [ "${F::1}" == "_" ] || [ "${F::-1}_" == "${F}" ]; then
 		error_out "{name} must not end or start with '_'!"
