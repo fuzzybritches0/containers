@@ -1,7 +1,7 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-2.0
 
-if [ "${1}" == "keep_alive" ]; then
+if [ "${0}" == "/tmp/KEEP_ALIVE" ]; then
 	echo '#!/bin/bash -l
 	"${@}"
 	echo > /tmp/cont_fifo' > /tmp/containers_exec
@@ -230,7 +230,7 @@ done
 
 USERSET="-u ${CONT_USER_ID}:${CONT_GROUP_ID}"
 RUN=(docker run "${RUN[@]}" "${EXEC[@]}" ${USERSET} \
-	-v $(realpath ${0}):/tmp/containers \
+	-v $(realpath ${0}):/tmp/KEEP_ALIVE \
 	-v ${HOME}/${DIR}:${HOME} -h ${NAME} --rm)
 EXEC=(docker exec "${EXEC[@]}" ${USERSET} "${ENVIS[@]}")
 
@@ -242,7 +242,7 @@ fi
 IS_RUNNING="$(docker ps | grep " ${NAME}:latest ")"
 
 if [ ! "${IS_RUNNING}" ]; then
-	DOCKER_ID=$("${RUN[@]}" -dt -w ${CONT_HOME} ${NAME}:latest /tmp/containers keep_alive)
+	DOCKER_ID=$("${RUN[@]}" -dt -w ${CONT_HOME} ${NAME}:latest /tmp/KEEP_ALIVE)
 else
 	DOCKER_ID="$(return_1 ${IS_RUNNING})"
 fi
