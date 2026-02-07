@@ -136,6 +136,10 @@ invoke_rc() {
 #CONT_HOME=/home/nobody" > "${IV}"
 }
 
+is_running() {
+	IS_RUNNING="$(docker ps | grep " ${NAME}:latest ")"
+}
+
 CREATE() {
 	test_name "${@}"
 	mkdir -p ${CONTAINERS_SOURCE}/${1,,}
@@ -258,7 +262,7 @@ if [ "${@:COUNT:1}" ] && [ "${PWD:0:${PWDLEN}}" != "${CONTAINERS_ROOT}/${DIR}" ]
 		exit 1
 fi
 
-IS_RUNNING="$(docker ps | grep " ${NAME}:latest ")"
+is_running
 
 if [ ! "${IS_RUNNING}" ]; then
 	DOCKER_ID=$("${RUN[@]}" -dt -w ${CONT_HOME} ${NAME}:latest /tmp/KEEP_ALIVE)
