@@ -60,7 +60,6 @@ return_3() {
 
 exists() {
 	if [ -f "${CONTAINERS_SOURCE}/${1,,}/Dockerfile" ]; then
-		[ "${2}" ] && error_out "${1} already exists!"
 		return 0
 	fi
 	return 1
