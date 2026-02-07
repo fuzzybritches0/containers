@@ -28,6 +28,7 @@ help_containers() {
 	echo "build {name}  - Build a docker container from a ${PNAME} source instance."
 	echo "clean {name}  - Clean-up stale docker container builds."
 	echo "start {name}  - Flag {name} docker container to persist. Start if not running."
+	echo "stop {name}   - Flag {name} docker container for shutdown. Shutdown if unclaimed."
 	echo
 	echo "{name} is always mandatory."
 	echo "{name} must be at least 4 characters long."
@@ -184,6 +185,17 @@ START() {
 	exists ${1} || error_out "${1} does not exist!"
 	cd "${CONTAINERS_SOURCE}/${1}"
 	${1} touch /tmp/cont_persist
+	exit 0
+}
+
+STOP() {
+	exists ${1} || error_out "${1} does not exist!"
+	NAME="${1}"
+	is_running
+	if [ "${IS_RUNNING}" ]; then
+		cd "${CONTAINERS_SOURCE}/${1}"
+		${1} rm -f /tmp/cont_persist
+	fi
 	exit 0
 }
 
