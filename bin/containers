@@ -10,8 +10,8 @@ if [ "${0}" == "/tmp/KEEP_ALIVE" ]; then
 	chmod ugo+w /tmp/cont_fifo
 	while true; do
 		cat /tmp/cont_fifo
-		COUNT="$(ps -e | wc -l)"
-		[ "${COUNT}" -lt "6" ] && break
+		COUNT="$(ps -e | grep containers_exec)"
+		[ ! "${COUNT}" ] && break
 	done
 	exit 0
 fi
