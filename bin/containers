@@ -215,7 +215,7 @@ if [ "${NAME}" == "${PNAME}" ] && [ ! "${1}" ] || [ "${1}" == "--help" ] || [ "$
 fi
 
 if [ "${NAME}" == "${PNAME}" ]; then
-	for CMD in create build clean help; do
+	for CMD in create build clean start stop help; do
 		[ "${CMD}" == "${1}" ] && break
 	done
 	${CMD^^} ${2}
