@@ -27,6 +27,7 @@ help_containers() {
 	echo "create {name} - Create a new ${PNAME} source instance."
 	echo "build {name}  - Build a docker container from a ${PNAME} source instance."
 	echo "clean {name}  - Clean-up stale docker container builds."
+	echo "start {name}  - Flag {name} docker container to persist. Start if not running."
 	echo
 	echo "{name} is always mandatory."
 	echo "{name} must be at least 4 characters long."
@@ -172,6 +173,13 @@ CLEAN() {
 			docker rmi ${1,,}:${tag}
 		fi
 	done
+	exit 0
+}
+
+START() {
+	exists ${1} || error_out "${1} does not exist!"
+	cd "${CONTAINERS_SOURCE}/${1}"
+	${1} touch /tmp/cont_persist
 	exit 0
 }
 
