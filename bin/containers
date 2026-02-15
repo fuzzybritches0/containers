@@ -277,7 +277,7 @@ fi
 is_running
 
 if [ ! "${IS_RUNNING}" ]; then
-	DOCKER_ID=$("${RUN[@]}" -dt -w ${CONT_HOME} ${NAME}:latest /tmp/KEEP_ALIVE)
+	DOCKER_ID=$("${RUN[@]}" -d -w ${CONT_HOME} ${NAME}:latest /tmp/KEEP_ALIVE)
 else
 	DOCKER_ID="$(return_1 ${IS_RUNNING})"
 fi
