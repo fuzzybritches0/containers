@@ -3,8 +3,16 @@
 
 if [ "${0}" == "/tmp/KEEP_ALIVE" ]; then
 	echo '#!/bin/bash -l
+
+	sigint() {
+		echo > /tmp/cont_fifo
+		exit 0
+	}
+
+	trap sigint SIGINT
+
 	"${@}"
-	echo > /tmp/cont_fifo' > /tmp/containers_exec
+	sigint' > /tmp/containers_exec
 	chmod ugo+x /tmp/containers_exec
 	mkfifo /tmp/cont_fifo
 	chmod ugo+w /tmp/cont_fifo
